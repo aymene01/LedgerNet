@@ -1,7 +1,7 @@
 .PHONY: proto
 
 build:
-	@go build -o bin/blocker
+	@go build ./cmd/main.go -o bin/blocker
 
 run: build
 	@./bin/blocker
