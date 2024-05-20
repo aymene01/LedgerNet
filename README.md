@@ -1,3 +1,15 @@
+<p align="center">
+  <picture>
+    <source srcset="./assets/logo.png">
+    <img alt="LedgerNet logo" height="120px" src="./assets/logo.png"> <!-- Logo height increased from 60px to 120px -->
+  </picture>
+  <p align="center">
+    Build fast, secure, and scalable decentralized applications with LedgerNet.
+    <br />
+    <br />
+  </p>
+</p>
+
 # LedgerNet
 
 LedgerNet is a high-performance distributed ledger platform that leverages the UTXO model and ED25519 cryptography for secure and efficient transactions. The platform uses Protocol Buffers for compact data serialization and gRPC for low-latency communication between nodes. LedgerNet's consensus mechanism is based on proof-of-stake (POS), which provides a more sustainable and decentralized alternative to proof-of-work (POW).
@@ -21,5 +33,7 @@ LedgerNet is a high-performance distributed ledger platform that leverages the U
 ### Building and Running
 
 1. Clone the LedgerNet repository:
+
 ```bash
 git clone https://github.com/your-username/ledgernet.git
+```
