@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source srcset="./assets/logo.png">
-    <img alt="LedgerNet logo" height="120px" src="./assets/logo.png"> <!-- Logo height increased from 60px to 120px -->
+    <img alt="LedgerNet logo" height="230px" src="./assets/logo.png"> <!-- Logo height increased from 60px to 120px -->
   </picture>
   <p align="center">
     Build fast, secure, and scalable decentralized applications with LedgerNet.
