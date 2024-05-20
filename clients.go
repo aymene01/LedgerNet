@@ -6,12 +6,12 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func getClient() (*grpc.ClientConn, error) {
+func getClient(listenAddr string) (*grpc.ClientConn, error) {
 	opts := []grpc.DialOption{
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	client, err := grpc.NewClient(":3000", opts...)
+	client, err := grpc.NewClient(listenAddr, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strings"
+	"sync"
 
 	"github.com/aymene01/blocker/pb"
 	"google.golang.org/grpc"
@@ -14,13 +15,32 @@ import (
 
 type Node struct {
 	version string
+
+	peerLock sync.RWMutex
+	peers    map[pb.NodeClient]bool
+
 	pb.UnimplementedNodeServer
 }
 
 func NewNode() *Node {
 	return &Node{
+		peers:   make(map[pb.NodeClient]bool),
 		version: "blocker-1",
 	}
+}
+
+func (n *Node) addPeer(c pb.NodeClient) {
+	n.peerLock.Lock()
+	defer n.peerLock.Unlock()
+
+	n.peers[c] = true
+}
+
+func (n *Node) deletePeer(c pb.NodeClient) {
+	n.peerLock.Lock()
+	defer n.peerLock.Unlock()
+
+	delete(n.peers, c)
 }
 
 func (n *Node) Start(listenAddr string) error {

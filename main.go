@@ -13,7 +13,7 @@ func main() {
 	go func() {
 		for {
 			time.Sleep(2 * time.Second)
-			makeHandshake()
+			makeTransaction()
 		}
 	}()
 

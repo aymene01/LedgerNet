@@ -7,8 +7,10 @@ import (
 	"github.com/aymene01/blocker/pb"
 )
 
+const currentListenAddr = ":3000"
+
 func makeHandshake() {
-	client, err := getClient()
+	client, err := getClient(currentListenAddr)
 
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +30,7 @@ func makeHandshake() {
 }
 
 func makeTransaction() {
-	client, err := getClient()
+	client, err := getClient(currentListenAddr)
 
 	if err != nil {
 		log.Fatal(err)
