@@ -8,7 +8,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aymene01/blocker/pb"
+	"github.com/aymene01/ledgerNet/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/peer"
 )

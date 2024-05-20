@@ -1,4 +1,4 @@
-module github.com/aymene01/blocker
+module github.com/aymene01/ledgerNet
 
 go 1.22.0
 

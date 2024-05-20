@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"github.com/aymene01/blocker/pb"
+	"github.com/aymene01/ledgerNet/pb"
 )
 
 const currentListenAddr = ":3000"

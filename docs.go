@@ -1,6 +1,6 @@
 package main
 
-// Blocker
+// LedgerNet
 //
 // ED25519 crypto
 // UTXO model
