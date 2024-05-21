@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"github.com/aymene01/ledgerNet/pb"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
@@ -17,6 +18,7 @@ import (
 type Node struct {
 	version    string
 	listenAddr string
+	logger     zap.SugaredLogger
 
 	peerLock sync.RWMutex
 	peers    map[pb.NodeClient]*pb.Version
@@ -25,9 +27,14 @@ type Node struct {
 }
 
 func NewNode() *Node {
+	loggerConfig := zap.NewDevelopmentConfig()
+	loggerConfig.EncoderConfig.TimeKey = ""
+	logger, _ := loggerConfig.Build()
+
 	return &Node{
 		peers:   make(map[pb.NodeClient]*pb.Version),
 		version: "blocker-1",
+		logger:  *logger.Sugar(),
 	}
 }
 
@@ -35,8 +42,7 @@ func (n *Node) addPeer(c pb.NodeClient, v *pb.Version) {
 	n.peerLock.Lock()
 	defer n.peerLock.Unlock()
 
-	fmt.Printf("[%s] new peer connected (%s) - height (%d)\n", n.listenAddr, v.ListenAddr, v.Height)
-
+	n.logger.Debugf("[%s] new peer connected [%s]", n.listenAddr, v.ListenAddr)
 	n.peers[c] = v
 }
 
@@ -64,7 +70,7 @@ func (n *Node) BootstrapNetwork(addrs []string) error {
 
 		v, err := c.Handshake(context.Background(), n.getVersion())
 		if err != nil {
-			fmt.Println("Handshake err", err)
+			n.logger.Errorf("Handshake err", err)
 			continue
 		}
 
@@ -88,14 +94,7 @@ func (n *Node) Start(listenAddr string) error {
 	}
 
 	pb.RegisterNodeServer(grpcServer, n)
-
-	portNum, err := getPortNum(listenAddr)
-
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("node running on port:", portNum)
+	n.logger.Infow("node running on port", "port", listenAddr)
 
 	return grpcServer.Serve(ln)
 }
