@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"time"
 
 	"github.com/aymene01/ledgerNet/node"
@@ -20,12 +19,6 @@ func main() {
 
 func makeNode(listenAddr string, bootsrapNodes []string) *node.Node {
 	n := node.NewNode()
-	go n.Start(listenAddr)
-	if len(bootsrapNodes) > 0 {
-		if err := n.BootstrapNetwork(bootsrapNodes); err != nil {
-			log.Fatal(err)
-		}
-	}
-
+	go n.Start(listenAddr, bootsrapNodes)
 	return n
 }
