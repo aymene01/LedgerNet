@@ -10,6 +10,7 @@ import (
 
 	"github.com/aymene01/ledgerNet/pb"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
@@ -27,10 +28,7 @@ type Node struct {
 }
 
 func NewNode() *Node {
-	loggerConfig := zap.NewDevelopmentConfig()
-	loggerConfig.EncoderConfig.TimeKey = ""
-	logger, _ := loggerConfig.Build()
-
+	logger, _ := getLoggerConfig()
 	return &Node{
 		peers:   make(map[pb.NodeClient]*pb.Version),
 		version: "blocker-1",
@@ -42,8 +40,22 @@ func (n *Node) addPeer(c pb.NodeClient, v *pb.Version) {
 	n.peerLock.Lock()
 	defer n.peerLock.Unlock()
 
-	n.logger.Debugf("[%s] new peer connected [%s]", n.listenAddr, v.ListenAddr)
+	// Handle the logic where we decide to
+	// accept or drop the incomming node
+
 	n.peers[c] = v
+
+	for _, addr := range v.PeerList {
+		if addr != n.listenAddr {
+			fmt.Printf("[%s] we need to connect with %s\n", n.listenAddr, addr)
+		}
+	}
+
+	n.logger.Debugw("new peer successfully connected",
+		"we", n.listenAddr,
+		"remoteNode", v.ListenAddr,
+		"height", v.Height,
+	)
 }
 
 func (n *Node) deletePeer(c pb.NodeClient) {
@@ -51,14 +63,6 @@ func (n *Node) deletePeer(c pb.NodeClient) {
 	defer n.peerLock.Unlock()
 
 	delete(n.peers, c)
-}
-
-func (n *Node) getVersion() *pb.Version {
-	return &pb.Version{
-		Version:    "blocker-0.1",
-		Height:     0,
-		ListenAddr: n.listenAddr,
-	}
 }
 
 func (n *Node) BootstrapNetwork(addrs []string) error {
@@ -94,7 +98,7 @@ func (n *Node) Start(listenAddr string) error {
 	}
 
 	pb.RegisterNodeServer(grpcServer, n)
-	n.logger.Infow("node running on port", "port", listenAddr)
+	n.logger.Infow("node started ...", "port", listenAddr)
 
 	return grpcServer.Serve(ln)
 }
@@ -117,13 +121,25 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *pb.Transaction) (*pb.A
 	return &pb.Ack{}, nil
 }
 
-func getPortNum(listenAddr string) (string, error) {
-	values := strings.Split(listenAddr, ":")
-	if len(values) != 2 {
-		return "", errors.New("invalid listen value")
+func (n *Node) getVersion() *pb.Version {
+	return &pb.Version{
+		Version:    "blocker-0.1",
+		Height:     0,
+		ListenAddr: n.listenAddr,
+		PeerList:   n.getPeerList(),
+	}
+}
+
+func (n *Node) getPeerList() []string {
+	n.peerLock.RLock()
+	defer n.peerLock.RUnlock()
+
+	peers := []string{}
+	for _, version := range n.peers {
+		peers = append(peers, version.ListenAddr)
 	}
 
-	return values[1], nil
+	return peers
 }
 
 func makeNodeClient(listenAddr string) (pb.NodeClient, error) {
@@ -138,4 +154,22 @@ func makeNodeClient(listenAddr string) (pb.NodeClient, error) {
 	}
 
 	return pb.NewNodeClient(c), nil
+}
+
+func getPortNum(listenAddr string) (string, error) {
+	values := strings.Split(listenAddr, ":")
+	if len(values) != 2 {
+		return "", errors.New("invalid listen value")
+	}
+
+	return values[1], nil
+}
+
+func getLoggerConfig() (*zap.Logger, error) {
+	loggerConfig := zap.NewDevelopmentConfig()
+	loggerConfig.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
+	loggerConfig.EncoderConfig.ConsoleSeparator = " "
+	loggerConfig.EncoderConfig.TimeKey = ""
+	loggerConfig.DisableStacktrace = true
+	return loggerConfig.Build()
 }
