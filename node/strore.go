@@ -27,7 +27,7 @@ func NewMemoryBlockStrore() *MemoryBlockStore {
 
 func (s *MemoryBlockStore) Get(hash string) (*pb.Block, error) {
 	s.lock.RLock()
-	defer s.lock.Unlock()
+	defer s.lock.RUnlock()
 
 	block, ok := s.blocks[hash]
 	if !ok {
