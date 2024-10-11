@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net"
 	"strings"
 	"sync"
@@ -73,7 +72,7 @@ func (n *Node) Handshake(ctx context.Context, v *pb.Version) (*pb.Version, error
 
 func (n *Node) HandleTransaction(ctx context.Context, tx *pb.Transaction) (*pb.Ack, error) {
 	peer, _ := peer.FromContext(ctx)
-	fmt.Println("received tx from:", peer)
+	n.logger.Info("received tx from:", peer)
 
 	return &pb.Ack{}, nil
 }
