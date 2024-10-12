@@ -159,6 +159,7 @@ func (n *Node) addPeer(c pb.NodeClient, v *pb.Version) {
 	)
 }
 
+//lint:ignore U1000 Ignore unused function for now
 func (n *Node) deletePeer(c pb.NodeClient) {
 	n.peerLock.Lock()
 	defer n.peerLock.Unlock()
@@ -265,6 +266,7 @@ func makeNodeClient(listenAddr string) (pb.NodeClient, error) {
 	return pb.NewNodeClient(c), nil
 }
 
+//lint:ignore U1000 Ignore unused function for now
 func getPortNum(listenAddr string) (string, error) {
 	values := strings.Split(listenAddr, ":")
 	if len(values) != 2 {
@@ -274,6 +276,7 @@ func getPortNum(listenAddr string) (string, error) {
 	return values[1], nil
 }
 
+//lint:ignore U1000 Ignore unused function for now
 func (n *Node) dialRemoteNode(addr string) (pb.NodeClient, *pb.Version, error) {
 	c, err := makeNodeClient(addr)
 	if err != nil {
