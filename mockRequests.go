@@ -4,7 +4,10 @@ import (
 	"context"
 	"log"
 
+	"github.com/aymene01/ledgerNet/crypto"
+
 	"github.com/aymene01/ledgerNet/pb"
+	"github.com/aymene01/ledgerNet/util"
 )
 
 const currentListenAddr = ":3000"
@@ -38,7 +41,27 @@ func makeTransaction() {
 	}
 
 	c := getNodeClient(client)
-	_, err = c.HandleTransaction(context.TODO(), &pb.Transaction{})
+
+	privateKey := crypto.GeneratePrivateKey()
+	
+	tx := &pb.Transaction{
+		Version: 1,
+		Inputs: []*pb.TxInput{
+			{
+				PrevHash: util.RandomHash(),
+				PrevOutIndex: 0,
+				PublicKey: privateKey.Public().Bytes(),
+			},
+		},
+		Outputs: []*pb.TxOutput{
+			{
+				Amount: 99,
+				Address: privateKey.Public().Address().Bytes(),
+			},
+		},
+	}
+	
+	_, err = c.HandleTransaction(context.TODO(), tx)
 
 	if err != nil {
 		log.Fatal(err)
