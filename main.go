@@ -10,9 +10,12 @@ func main() {
 	makeNode(":3000", []string{})
 	time.Sleep(time.Second)
 	makeNode(":4000", []string{":3000"})
-
-	time.Sleep(4 * time.Second)
+	time.Sleep(time.Second)
 	makeNode(":5000", []string{":4000"})
+
+	time.Sleep(time.Second)
+
+	makeTransaction()
 
 	select {}
 }

@@ -2,18 +2,47 @@ package node
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
 	"net"
 	"strings"
 	"sync"
 
 	"github.com/aymene01/ledgerNet/pb"
+	"github.com/aymene01/ledgerNet/types"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/peer"
 )
+
+
+type Mempool struct {
+	txx map[string]*pb.Transaction
+}
+
+func NewMempool() *Mempool {
+	return &Mempool{
+		txx: make(map[string]*pb.Transaction),
+	}
+}
+
+func (pool *Mempool) Has(tx *pb.Transaction) bool {
+	hash := hex.EncodeToString(types.HashTransaction(tx))
+	_, ok := pool.txx[hash]
+	return ok
+}
+
+func (pool *Mempool) Add(tx *pb.Transaction) bool {
+	if pool.Has(tx) {
+		return false
+	}
+
+	hash := hex.EncodeToString(types.HashTransaction(tx))
+	pool.txx[hash] = tx
+	return true
+}
 
 type Node struct {
 	version    string
@@ -23,6 +52,7 @@ type Node struct {
 	peerLock sync.RWMutex
 	peers    map[pb.NodeClient]*pb.Version
 
+	mempool *Mempool
 	pb.UnimplementedNodeServer
 }
 
@@ -32,6 +62,7 @@ func NewNode() *Node {
 		peers:   make(map[pb.NodeClient]*pb.Version),
 		version: "blocker-1",
 		logger:  *logger.Sugar(),
+		mempool: NewMempool(),
 	}
 }
 
@@ -72,8 +103,16 @@ func (n *Node) Handshake(ctx context.Context, v *pb.Version) (*pb.Version, error
 
 func (n *Node) HandleTransaction(ctx context.Context, tx *pb.Transaction) (*pb.Ack, error) {
 	peer, _ := peer.FromContext(ctx)
-	n.logger.Info("received tx from:", peer)
+	hash := hex.EncodeToString(types.HashTransaction(tx))
 
+	if n.mempool.Add(tx) {
+		n.logger.Debugw("received tx:", "from", peer.Addr, "hash", hash, "we", n.listenAddr)
+		go func () {
+			if err := n.broadcast(tx); err != nil {
+				n.logger.Errorw("broadcast error", "err", err)
+			}
+		}()
+	}
 	return &pb.Ack{}, nil
 }
 
@@ -112,6 +151,19 @@ func (n *Node) deletePeer(c pb.NodeClient) {
 	defer n.peerLock.Unlock()
 
 	delete(n.peers, c)
+}
+
+func (n *Node) broadcast(msg any) error {
+	for peer := range n.peers {
+		switch v := msg.(type) {
+		case *pb.Transaction:
+			_, err := peer.HandleTransaction(context.Background(), v)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (n *Node) bootstrapNetwork(addrs []string) error {
@@ -194,6 +246,21 @@ func getPortNum(listenAddr string) (string, error) {
 	}
 
 	return values[1], nil
+}
+
+
+func (n *Node) dialRemoteNode(addr string) (pb.NodeClient, *pb.Version, error){
+	c, err := makeNodeClient(addr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	v, err := c.Handshake(context.Background(), n.getVersion())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return c, v, nil
 }
 
 func getLoggerConfig() (*zap.Logger, error) {
