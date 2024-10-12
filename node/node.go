@@ -7,7 +7,9 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/aymene01/ledgerNet/crypto"
 	"github.com/aymene01/ledgerNet/pb"
 	"github.com/aymene01/ledgerNet/types"
 	"go.uber.org/zap"
@@ -17,6 +19,7 @@ import (
 	"google.golang.org/grpc/peer"
 )
 
+const blockTime = time.Second * 5
 
 type Mempool struct {
 	txx map[string]*pb.Transaction
@@ -44,9 +47,14 @@ func (pool *Mempool) Add(tx *pb.Transaction) bool {
 	return true
 }
 
+type ServerConfig struct {
+	Version string
+	ListenAddr string
+	PrivateKey *crypto.PrivateKey
+}
+
 type Node struct {
-	version    string
-	listenAddr string
+	ServerConfig
 	logger     zap.SugaredLogger
 
 	peerLock sync.RWMutex
@@ -56,18 +64,18 @@ type Node struct {
 	pb.UnimplementedNodeServer
 }
 
-func NewNode() *Node {
+func NewNode(cfg ServerConfig) *Node {
 	logger, _ := getLoggerConfig()
 	return &Node{
 		peers:   make(map[pb.NodeClient]*pb.Version),
-		version: "blocker-1",
 		logger:  *logger.Sugar(),
 		mempool: NewMempool(),
+		ServerConfig: cfg,
 	}
 }
 
 func (n *Node) Start(listenAddr string, bootstrapNodes []string) error {
-	n.listenAddr = listenAddr
+	n.ListenAddr = listenAddr
 
 	var (
 		opts       = []grpc.ServerOption{}
@@ -81,12 +89,17 @@ func (n *Node) Start(listenAddr string, bootstrapNodes []string) error {
 	}
 
 	pb.RegisterNodeServer(grpcServer, n)
-	n.logger.Infow("node started ...", "port", listenAddr)
+	n.logger.Infow("node started ...", "port", n.ListenAddr)
 
 	// bootstrapNode
 	if len(bootstrapNodes) > 0 {
 		go n.bootstrapNetwork(bootstrapNodes)
 	}
+
+	if n.PrivateKey != nil {
+		go n.validatorLoop()
+	}
+
 	return grpcServer.Serve(ln)
 }
 
@@ -106,7 +119,7 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *pb.Transaction) (*pb.A
 	hash := hex.EncodeToString(types.HashTransaction(tx))
 
 	if n.mempool.Add(tx) {
-		n.logger.Debugw("received tx:", "from", peer.Addr, "hash", hash, "we", n.listenAddr)
+		n.logger.Debugw("received tx:", "from", peer.Addr, "hash", hash, "we", n.ListenAddr)
 		go func () {
 			if err := n.broadcast(tx); err != nil {
 				n.logger.Errorw("broadcast error", "err", err)
@@ -120,7 +133,7 @@ func (n *Node) getVersion() *pb.Version {
 	return &pb.Version{
 		Version:    "blocker-0.1",
 		Height:     0,
-		ListenAddr: n.listenAddr,
+		ListenAddr: n.ListenAddr,
 		PeerList:   n.getPeerList(),
 	}
 }
@@ -140,7 +153,7 @@ func (n *Node) addPeer(c pb.NodeClient, v *pb.Version) {
 		go n.bootstrapNetwork(v.PeerList)
 	}
 	n.logger.Debugw("new peer successfully connected",
-		"we", n.listenAddr,
+		"we", n.ListenAddr,
 		"remoteNode", v.ListenAddr,
 		"height", v.Height,
 	)
@@ -172,7 +185,7 @@ func (n *Node) bootstrapNetwork(addrs []string) error {
 			continue
 		}
 
-		n.logger.Debugw("dialing remote node", "we", n.listenAddr, "remote", addr)
+		n.logger.Debugw("dialing remote node", "we", n.ListenAddr, "remote", addr)
 		c, v, err := n.newRemoteClient(addr)
 		if err != nil {
 			return err
@@ -181,6 +194,19 @@ func (n *Node) bootstrapNetwork(addrs []string) error {
 		n.addPeer(c, v)
 	}
 	return nil
+}
+
+func (n *Node) validatorLoop() {
+	n.logger.Infow("starting validator loop", "pubkey", n.PrivateKey.Public(), "blockTime", blockTime)
+	ticker := time.NewTicker(blockTime)
+	for {
+		<-ticker.C
+		// usdafe code ⚠️
+		// for hash := range n.mempool.txx {
+		// 	delete(n.mempool.txx, hash)
+		// }
+	    n.logger.Debugw("time to create a new block", "lenTx", len(n.mempool.txx))
+	}
 }
 
 func (n *Node) newRemoteClient(addr string) (pb.NodeClient, *pb.Version, error) {
@@ -198,7 +224,7 @@ func (n *Node) newRemoteClient(addr string) (pb.NodeClient, *pb.Version, error) 
 }
 
 func (n *Node) canConnectWith(addr string) bool {
-	if n.listenAddr == addr {
+	if n.ListenAddr == addr {
 		return false
 	}
 
