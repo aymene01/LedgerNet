@@ -26,7 +26,7 @@ func (list *HeaderList) Get(index int) *pb.Header {
 	return list.headers[index]
 }
 
-func (list *HeaderList) Add(h *pb.Header){
+func (list *HeaderList) Add(h *pb.Header) {
 	list.headers = append(list.headers, h)
 }
 
@@ -42,7 +42,7 @@ type Chain struct {
 func NewChain(bs Blockstorer) *Chain {
 	return &Chain{
 		blockStore: bs,
-		headers: NewHeaderList(),
+		headers:    NewHeaderList(),
 	}
 }
 

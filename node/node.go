@@ -48,14 +48,14 @@ func (pool *Mempool) Add(tx *pb.Transaction) bool {
 }
 
 type ServerConfig struct {
-	Version string
+	Version    string
 	ListenAddr string
 	PrivateKey *crypto.PrivateKey
 }
 
 type Node struct {
 	ServerConfig
-	logger     zap.SugaredLogger
+	logger zap.SugaredLogger
 
 	peerLock sync.RWMutex
 	peers    map[pb.NodeClient]*pb.Version
@@ -67,9 +67,9 @@ type Node struct {
 func NewNode(cfg ServerConfig) *Node {
 	logger, _ := getLoggerConfig()
 	return &Node{
-		peers:   make(map[pb.NodeClient]*pb.Version),
-		logger:  *logger.Sugar(),
-		mempool: NewMempool(),
+		peers:        make(map[pb.NodeClient]*pb.Version),
+		logger:       *logger.Sugar(),
+		mempool:      NewMempool(),
 		ServerConfig: cfg,
 	}
 }
@@ -120,7 +120,7 @@ func (n *Node) HandleTransaction(ctx context.Context, tx *pb.Transaction) (*pb.A
 
 	if n.mempool.Add(tx) {
 		n.logger.Debugw("received tx:", "from", peer.Addr, "hash", hash, "we", n.ListenAddr)
-		go func () {
+		go func() {
 			if err := n.broadcast(tx); err != nil {
 				n.logger.Errorw("broadcast error", "err", err)
 			}
@@ -205,7 +205,7 @@ func (n *Node) validatorLoop() {
 		// for hash := range n.mempool.txx {
 		// 	delete(n.mempool.txx, hash)
 		// }
-	    n.logger.Debugw("time to create a new block", "lenTx", len(n.mempool.txx))
+		n.logger.Debugw("time to create a new block", "lenTx", len(n.mempool.txx))
 	}
 }
 
@@ -274,8 +274,7 @@ func getPortNum(listenAddr string) (string, error) {
 	return values[1], nil
 }
 
-
-func (n *Node) dialRemoteNode(addr string) (pb.NodeClient, *pb.Version, error){
+func (n *Node) dialRemoteNode(addr string) (pb.NodeClient, *pb.Version, error) {
 	c, err := makeNodeClient(addr)
 	if err != nil {
 		return nil, nil, err

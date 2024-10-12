@@ -43,24 +43,24 @@ func makeTransaction() {
 	c := getNodeClient(client)
 
 	privateKey := crypto.GeneratePrivateKey()
-	
+
 	tx := &pb.Transaction{
 		Version: 1,
 		Inputs: []*pb.TxInput{
 			{
-				PrevHash: util.RandomHash(),
+				PrevHash:     util.RandomHash(),
 				PrevOutIndex: 0,
-				PublicKey: privateKey.Public().Bytes(),
+				PublicKey:    privateKey.Public().Bytes(),
 			},
 		},
 		Outputs: []*pb.TxOutput{
 			{
-				Amount: 99,
+				Amount:  99,
 				Address: privateKey.Public().Address().Bytes(),
 			},
 		},
 	}
-	
+
 	_, err = c.HandleTransaction(context.TODO(), tx)
 
 	if err != nil {

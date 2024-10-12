@@ -24,7 +24,7 @@ func main() {
 
 func makeNode(listenAddr string, bootsrapNodes []string, isValidator bool) *node.Node {
 	cfg := node.ServerConfig{
-		Version: "blocker-1",
+		Version:    "blocker-1",
 		ListenAddr: listenAddr,
 	}
 
