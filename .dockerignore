@@ -1,0 +1,45 @@
+# Exclude the .git directory (version control data is not needed)
+.git
+.gitignore
+
+# Go-related files that should be excluded
+*.mod
+*.sum
+vendor/
+
+# Binaries and build output directories
+bin/
+tmp/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.o
+
+# Local environment and configuration files
+.env
+.env.*
+*.local
+*.config
+
+# Editor/IDE-related files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.log
+
+# OS/Filesystem-related files
+.DS_Store
+Thumbs.db
+
+# Dependency caches and temp directories
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.cache/
+__pycache__/
+*.pid
